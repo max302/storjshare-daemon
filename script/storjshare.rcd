@@ -1,0 +1,116 @@
+echo #!/bin/sh
+
+. /etc/rc.subr
+
+#PROVIDE: storjshare storj
+
+name=storjshare
+rcvar="${name}_enable"
+command="/usr/local/bin/${name}"
+pidfile="/var/run/${name}.pid"
+
+config_dir="/etc/storj/" #The startall command will start *.json files in this directory
+
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+status_cmd="${name}_status"
+stopall_cmd="${name}_stopall"
+startall_cmd="${name}_startall"
+killall_cmd="${name}_killall"
+logs_cmd="${name}_logs"
+destroy_cmd="${name}_destroy"
+version_cmd="${name}_version"
+extra_commands="startall stopall status killall logs destroy version" #All storjshare-daemon arguments added, except for "create", which requires more user involvement
+
+load_rc_config $name
+: ${storjshare_enable:=no}
+: ${d_msg="Nothing started."}
+
+storjshare_startall()
+{
+	#Fetch config files present int config directory
+	config_enum=`ls $config_dir | grep .json`
+
+	if [ -z "$config_enum" ]; then
+		echo "No config file found. Make sure config files have a .json extension"
+		exit 1
+	fi
+
+	for config_file in $config_enum
+	do
+		eval $command "start --config" "$config_dir$config_file"
+	done
+	exit 0
+}
+
+storjshare_start()
+{
+	#Check for additional arguments
+	if [ -z $1 ]; then
+		echo "No config file provided. To start all shares with config files in $config_dir, use startall."
+		echo "Falling back to using startall, loading all configs from $config_dir"
+		storjshare_startall
+
+	#Check if a config file is specified
+elif (echo "$1" | grep -q .json > 0); then
+		command_args="start --config $config_dir$2"
+
+	#If input is not a config file, try to use it as a share ID
+	#Restarting with share ID does not seem to be supported at the moment
+	#elif [ -z "$2" ]; then
+	#	command_args="start $2"
+	fi
+}
+
+storjshare_stop()
+{
+	if [ -z "$1" ]; then
+		echo "No share ID file provided. To stop all shares, use killall."
+		exit 1
+	fi
+	command_args="stop -i $1"
+}
+
+storjshare_stopall()
+{
+	#This is essentially just a shortcut to killall.
+	#Might be useful if/when there is a way to stop and start with share ID
+	command_args="killall"
+}
+
+storjshare_status()
+{
+	command_args="status"
+}
+
+storjshare_killall()
+{
+  command_args="killall"
+}
+
+storjshare_logs()
+{
+	if [ -z "$1" ]; then
+		echo "No share ID file provided. To stop all shares, use killall."
+		exit 1
+	fi
+  command_args="logs -i $1"
+}
+
+storjshare_destroy()
+{
+	if [ -z $1 ]; then
+		echo "No share ID file provided. To destroy all shares, use killall."
+		exit 1
+	elif [ -z "$1" ]; then
+		command_args="destroy $1"
+	fi
+}
+
+storjshare_version()
+{
+   command_args="version"
+}
+
+run_rc_command "$@"
+eval $command $command_args
