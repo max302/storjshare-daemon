@@ -9,7 +9,12 @@ rcvar="${name}_enable"
 command="/usr/local/bin/${name}"
 pidfile="/var/run/${name}.pid"
 
-config_dir="/etc/storj/" #The startall command will start *.json files in this directory
+#THIS SCRIPT ASSUMES THE FOLLOWING DIRECTORY STRUCTURE
+#Storj node logs in /etc/storjshare/logs/$instance.log
+#Storj data in /etc/storjshare/data/$instance/
+#Storj config in /etc/storshare/config/$instance.json
+
+config_dir="/etc/storj/config" #The startall command will start *.json files in this directory
 
 start_cmd="${name}_start"
 stop_cmd="${name}_stop"
@@ -26,6 +31,7 @@ load_rc_config $name
 : ${storjshare_enable:=no}
 : ${d_msg="Nothing started."}
 
+
 storjshare_startall()
 {
 	#Fetch config files present int config directory
@@ -36,9 +42,11 @@ storjshare_startall()
 		exit 1
 	fi
 
+	#Makes sure the daemon is started
+	eval $command "daemon"
 	for config_file in $config_enum
 	do
-		eval $command "start --config" "$config_dir$config_file"
+		eval $command "start --config" "$config_dir/$config_file"
 	done
 	exit 0
 }
@@ -54,6 +62,8 @@ storjshare_start()
 	#Check if a config file is specified
 elif (echo "$1" | grep -q .json > 0); then
 		command_args="start --config $config_dir$2"
+		#Makes sure the daemon is started
+		eval $command "daemon"
 
 	#If input is not a config file, try to use it as a share ID
 	#Restarting with share ID does not seem to be supported at the moment
