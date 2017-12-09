@@ -14,7 +14,7 @@ pidfile="/var/run/${name}.pid"
 #Storj data in /etc/storjshare/data/$instance/
 #Storj config in /etc/storshare/config/$instance.json
 
-config_dir="/etc/storj/config" #The startall command will start *.json files in this directory
+config_dir="/etc/storjshare/config" #The startall command will start *.json files in this directory
 
 start_cmd="${name}_start"
 stop_cmd="${name}_stop"
